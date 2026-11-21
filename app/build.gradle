@@ -1,6 +1,5 @@
 plugins {
     id 'com.android.application'
-    id 'com.hyperdevs.poeditor'
 }
 
 def locales = file('src/main/res').listFiles(new FilenameFilter() {
@@ -43,8 +42,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 }
-
-apply from: '../../_POEditor/dualwallpaper.gradle'
 
 configurations.all {
     exclude group: 'androidx.appcompat', module: 'appcompat'
