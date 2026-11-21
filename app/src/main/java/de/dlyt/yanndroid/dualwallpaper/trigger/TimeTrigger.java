@@ -6,8 +6,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 
+import java.text.DateFormat;
 import java.util.Calendar;
+import java.util.Date;
 
 import de.dlyt.yanndroid.dualwallpaper.Preferences;
 import de.dlyt.yanndroid.dualwallpaper.utils.WallpaperUtil;
@@ -32,6 +35,7 @@ public class TimeTrigger extends BroadcastReceiver {
         new Thread(() -> {
             try {
                 applyIfChanged(app, false);
+                recordFire(app, intent.getAction());
                 scheduleNext(app);
             } finally {
                 result.finish();
@@ -48,7 +52,7 @@ public class TimeTrigger extends BroadcastReceiver {
         AlarmManager alarmManager = context.getSystemService(AlarmManager.class);
         alarmManager.cancel(getTriggerIntent(context, true));
         alarmManager.cancel(getTriggerIntent(context, false));
-        context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).edit().clear().apply();
+        context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).edit().remove(KEY_LAST_DARK).apply();
     }
 
     /** Applies wallpapers only if the target state differs from what was last applied (avoids activity reload loop). */
@@ -73,9 +77,38 @@ public class TimeTrigger extends BroadcastReceiver {
         long at = getNextTimeMillis(nextIsNight ? preferences.getScheduleStart() : preferences.getScheduleEnd());
         PendingIntent pi = getTriggerIntent(context, nextIsNight);
 
-        // Inexact on purpose: fires at/after `at` (a few min late at worst, even in Doze),
-        // batched with other alarms by the system, and needs no special permission.
-        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+        // Exact alarm (2/day, negligible battery). Needs "Alarms & reminders" on Android 12+;
+        // falls back to an inexact, Doze-safe alarm if not granted.
+        boolean exact = canScheduleExact(context);
+        if (exact) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+        } else {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+        }
+        context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).edit()
+                .putLong("next_ms", at).putBoolean("next_exact", exact).apply();
+    }
+
+    public static boolean canScheduleExact(Context context) {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S
+                || context.getSystemService(AlarmManager.class).canScheduleExactAlarms();
+    }
+
+    private static void recordFire(Context context, String action) {
+        context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).edit()
+                .putLong("fire_ms", System.currentTimeMillis()).putString("fire_action", action).apply();
+    }
+
+    /** Human-readable status for the UI: last alarm, next alarm, and whether it is exact. */
+    public static String getStatus(Context context) {
+        SharedPreferences sp = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE);
+        DateFormat f = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM);
+        long fire = sp.getLong("fire_ms", 0), next = sp.getLong("next_ms", 0);
+        StringBuilder sb = new StringBuilder();
+        sb.append("Last alarm: ").append(fire == 0 ? "none yet" : f.format(new Date(fire)));
+        if (next != 0) sb.append("\nNext: ").append(f.format(new Date(next)))
+                .append(sp.getBoolean("next_exact", false) ? " (exact)" : " (not exact)");
+        return sb.toString();
     }
 
     public static boolean isNowDark(Preferences preferences) {

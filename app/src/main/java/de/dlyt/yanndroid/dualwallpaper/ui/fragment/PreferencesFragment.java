@@ -26,6 +26,7 @@ import java.util.Date;
 import de.dlyt.yanndroid.dualwallpaper.Preferences;
 import de.dlyt.yanndroid.dualwallpaper.R;
 import de.dlyt.yanndroid.dualwallpaper.trigger.ThemeTrigger;
+import de.dlyt.yanndroid.dualwallpaper.trigger.TimeTrigger;
 import de.dlyt.yanndroid.dualwallpaper.ui.adapter.ViewPagerAdapter;
 import de.dlyt.yanndroid.dualwallpaper.utils.TriggerUtil;
 import de.dlyt.yanndroid.dualwallpaper.utils.WallpaperUtil;
@@ -104,6 +105,8 @@ public class PreferencesFragment extends PreferenceFragmentCompat {
         modePreference.seslSetSummaryColor(getColoredSummaryColor());
         modePreference.setOnPreferenceChangeListener((preference, newValue) -> {
             schedulePreference.setVisible(newValue.equals("1"));
+            Preference status = findPreference("alarm_status");
+            if (status != null) status.setVisible(newValue.equals("1"));
             if (mPreferences.isEnabled()) {
                 if (newValue.equals("0")) {
                     TriggerUtil.startThemeTrigger(mContext);
@@ -148,6 +151,11 @@ public class PreferencesFragment extends PreferenceFragmentCompat {
 
     @Override
     public void onResume() {
+        Preference status = findPreference("alarm_status");
+        if (status != null) {
+            status.setVisible(!mPreferences.changeWithTheme());
+            status.setSummary(TimeTrigger.getStatus(mContext));
+        }
         setRelativeLinkCard();
         super.onResume();
     }

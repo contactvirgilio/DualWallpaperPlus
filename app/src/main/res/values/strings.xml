@@ -38,4 +38,8 @@
     <string name="error_storage_permission_not_granted">"Storage permission not granted."</string>
     <string name="error_saving_wallpaper">"Error while saving wallpaper."</string>
 
+    <string name="exact_alarm_title">Allow exact alarms</string>
+    <string name="exact_alarm_message">To switch wallpapers on time, DualWallpaper needs the \"Alarms &amp; reminders\" permission.</string>
+    <string name="exact_alarm_allow">Allow</string>
+    <string name="alarm_status_title">Alarm status</string>
 </resources>

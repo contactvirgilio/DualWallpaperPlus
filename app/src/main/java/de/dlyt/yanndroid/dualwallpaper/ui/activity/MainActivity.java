@@ -5,7 +5,10 @@ import static de.dlyt.yanndroid.dualwallpaper.utils.WallpaperUtil.WallpaperType;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -19,6 +22,7 @@ import androidx.fragment.app.FragmentManager;
 import de.dlyt.yanndroid.dualwallpaper.Preferences;
 import de.dlyt.yanndroid.dualwallpaper.R;
 import de.dlyt.yanndroid.dualwallpaper.trigger.ThemeTrigger;
+import de.dlyt.yanndroid.dualwallpaper.trigger.TimeTrigger;
 import de.dlyt.yanndroid.dualwallpaper.ui.adapter.ViewPagerAdapter;
 import de.dlyt.yanndroid.dualwallpaper.ui.fragment.PreferencesFragment;
 import de.dlyt.yanndroid.dualwallpaper.utils.DeviceUtil;
@@ -53,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
                 TriggerUtil.startThemeTrigger(this);
             } else {
                 TriggerUtil.startTimeTrigger(this);
+                askForExactAlarm();
             }
         }
 
@@ -65,6 +70,17 @@ public class MainActivity extends AppCompatActivity {
 
         if (getIntent().getAction().equals(Intent.ACTION_ATTACH_DATA))
             handleSetWallpaperIntent(getIntent());
+    }
+
+    private void askForExactAlarm() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || TimeTrigger.canScheduleExact(this)) return;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.exact_alarm_title)
+                .setMessage(R.string.exact_alarm_message)
+                .setPositiveButton(R.string.exact_alarm_allow, (d, w) -> startActivity(
+                        new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:" + getPackageName()))))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private void handleSetWallpaperIntent(Intent intent) {
