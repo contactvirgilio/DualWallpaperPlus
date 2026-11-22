@@ -1,0 +1,9 @@
+<resources>
+    <color name="ic_launcher_background">#00B8D4</color>
+    <color name="primary">#53DBCB</color>
+    <color name="on_primary">#003733</color>
+    <color name="primary_container">#00504A</color>
+    <color name="on_primary_container">#74F8E8</color>
+    <color name="secondary_container">#324B48</color>
+    <color name="on_secondary_container">#CCE8E4</color>
+</resources>
